@@ -1,0 +1,83 @@
+package transducers
+
+import scala.language.higherKinds
+
+trait Transducers {
+
+  /**
+   * Context could be Try, Future, Task, Process or other higher kinded type 
+   * within which values are produced.
+   *
+   * In the simple case, Context[S] = S and transducers work directly 
+   * on series of values similar to standard library collection methods.
+   */
+  type Context[+S]
+
+  /**
+   * Reducer over A's producing an S. 
+   *
+   * The internal state of the reducer is of type State (not always the same as S).
+   *
+   * The init, complete and apply methods correspond to 
+   * the 0, 1 and 2 arity functions of a clojure reducer.
+   * The isReduced predicate on the state says the reduction should stop.
+   * That is, apply(s, a) should not be called if isReduced(s).
+   *
+   * Each reduction step produces a new State, but in context ie as a Context[State].
+   * This is good for error handling, asynchronous execution, or both.
+   */
+  trait Reducer[-A, +S] {
+    type State
+    def init: State
+    def apply(s: State, a: A): Context[State]
+    def isReduced(s: State): Boolean
+    def complete(s: State): S
+  }
+
+  /**
+   * Make a basic reducer fom an initial value and function. 
+   * (State and result S will be the same type.)
+   */
+  def reducer[A, S](s: S)(f: (S, A) => Context[S]): Reducer[A, S] = new Reducer[A, S] {
+    type State = S
+    def init: S = s
+    def apply(s: S, a: A): Context[S] = f(s, a)
+    def isReduced(s: S): Boolean = false
+    def complete(s: S): S = s
+  }
+
+  /**
+   * Transducer is a (polymorphic) function from Reducer to Reducer.
+   * These can be composed by andThen as with ordinary functions.
+   */
+  trait Transducer[+A, -B] { tb =>
+    def apply[S](fa: Reducer[A, S]): Reducer[B, S]
+    def andThen[C](tc: Transducer[B, C]) = new Transducer[A, C] {
+      def apply[S](fa: Reducer[A, S]) = tc(tb(fa))
+    }
+    def compose[C](ta: Transducer[C, A]) = new Transducer[C, B] {
+      def apply[S](fc: Reducer[C, S]) = tb(ta(fc))
+    }
+  }
+
+  /**
+   *  A transducer that effects no change.
+   */
+  def cat[A] = new Transducer[A, A] {
+    def apply[S](fa: Reducer[A, S]) = fa
+  }
+
+  trait Educible[R[_]] {
+    def educe[A, S](r: R[A], f: Reducer[A, S]): Context[S]
+  }
+
+  def educe[R[_], A, S](r: R[A], f: Reducer[A, S])(implicit e: Educible[R]): Context[S] =
+    e.educe(r, f)
+
+  /**
+   * Apply a Reducer of B's to an Educible of A's using a transducer from A's to B's
+   */
+  def transduce[R[_]:Educible, A, B, S](r: R[A], t: Transducer[B, A], f: Reducer[B, S]): Context[S] = 
+    educe(r, t(f))
+
+}
