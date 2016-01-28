@@ -1,7 +1,5 @@
 package transducers
 
-import scala.language.higherKinds
-
 trait Operators { ops: Transducers with Views =>
 
   /**
