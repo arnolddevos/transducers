@@ -16,12 +16,12 @@ trait Operators { ops: Transducers with Views =>
    *  Standard operators for Educibles including those needed
    *  by for comprehensions.
    */
-  implicit class EductionOps[R[_]:Educible, A]( ra: R[A] ) {
-    def map[B](g: A => B) = view(ra, ops.map(g))
-    def flatMap[S[_]:Educible, B](g: A => S[B]) = view(ra, ops.flatMap(g))
-    def >>=[S[_]:Educible, B](g: A => S[B]) = flatMap(g)
-    def >>[S[_]:Educible, B]( k: => S[B] ) = flatMap(_ => k)
-    def withFilter(p: A => Boolean) = view(ra, ops.filter(p))
+  implicit class EductionOps[G, A]( g: G )(implicit e: Educible[G, A]) {
+    def map[B](f: A => B) = view(g, ops.map(f))
+    def flatMap[H, B](f: A => H)(implicit e1: Educible[H, B]) = view(g, ops.flatMap(f))
+    def >>=[H, B](f: A => H)(implicit e1: Educible[H, B]) = flatMap(f)
+    def >>[H, B]( k: => H )(implicit e1: Educible[H, B]) = flatMap(_ => k)
+    def withFilter(p: A => Boolean) = view(g, ops.filter(p))
   }
 
   /**
@@ -58,7 +58,7 @@ trait Operators { ops: Transducers with Views =>
   /**
    * Fundamental transducer for flatMap.
    */
-  def flatMap[A, B, R[_]:Educible](g: B => R[A]) = new Transducer[A, B] {
+  def flatMap[A, B, G](g: B => G)(implicit e: Educible[G, A]) = new Transducer[A, B] {
     def apply[S](f: Reducer[A, S]) = proxy(f) {
       (s0, b) =>
         val inner = new Reducer[A, f.State] {
