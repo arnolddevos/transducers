@@ -18,6 +18,8 @@ trait Aggregates { this: Transducers =>
       rhs.min + min,
       count + count
     )
+
+    def isValid = count > 0
   }
 
   object AggDouble {
