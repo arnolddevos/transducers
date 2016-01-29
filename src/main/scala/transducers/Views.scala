@@ -1,7 +1,5 @@
 package transducers
 
-import scala.language.higherKinds
-
 trait Views { this: Transducers =>
 
   /**
@@ -9,24 +7,24 @@ trait Views { this: Transducers =>
    */
   trait View[A] {
     type Elem
-    type Base[_]
-    def base: Base[Elem]
-    def isEducible: Educible[Base]
+    type Base
+    def base: Base
+    def isEducible: Educible[Base, Elem]
     def trans: Transducer[A, Elem]
   }
 
-  implicit def viewIsEducible = new Educible[View] {
-    def educe[A, S](v: View[A], f: Reducer[A, S]): Context[S] =
+  implicit def viewIsEducible[A] = new Educible[View[A], A] {
+    def educe[S](v: View[A], f: Reducer[A, S]): Context[S] =
       transduce(v.base, v.trans, f)(v.isEducible)
   }
 
-  def view[R[_], A, B](rb: R[B], t: Transducer[A, B])(implicit e: Educible[R]): View[A] = new View[A] {
+  def view[G, A, B](g: G, t: Transducer[A, B])(implicit e: Educible[G, B]): View[A] = new View[A] {
     type Elem = B
-    type Base[X] = R[X]
-    val base = rb
+    type Base = G
+    val base = g
     def isEducible = e
     def trans = t
   }
 
-  def view[R[_], B](rb: R[B])(implicit e: Educible[R]): View[B] = view[R, B, B](rb, cat[B])
+  def view[G, B](g: G)(implicit e: Educible[G, B]): View[B] = view[G, B, B](g, cat[B])
 }
