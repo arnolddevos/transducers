@@ -7,6 +7,8 @@ package transducers
 trait Educers { this: Transducers =>
 
   type Context[+S] = S
+  def inContext[S](s: S) = s
+  def mapContext[S, T](s: S)( f: S => T ) = f(s)
 
   implicit def listIsEducible[X] = new Educible[List[X], X] {
     def educe[S]( xs: List[X], f: Reducer[X, S]): S = {

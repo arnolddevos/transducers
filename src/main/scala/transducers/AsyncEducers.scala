@@ -13,7 +13,6 @@ trait AsyncEducers { this: Transducers =>
    */
   def bindContext[A, B](ca: Context[A])(f: A => Context[B]): Context[B]
   def mapContext[S, T](c: Context[S])( f: S => T ): Context[T]
-  def inContext[S](s: S): Context[S]
 
   implicit def listIsEducible[X] = new Educible[List[X], X] {
     def educe[S]( xs: List[X], f: Reducer[X, S]): Context[S] = {

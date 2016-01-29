@@ -1,26 +1,13 @@
 package transducers
 
-trait Operators { ops: Transducers with Views =>
+trait Operators { this: Transducers =>
 
   /**
    *  The stock transducers require that Context is a functor.
    *  A map and a lifting operation are needed.
    */
   def mapContext[S, T](c: Context[S])( f: S => T ): Context[T]
-  def inContext[S](s: S): Context[S]
 
-
-  /**
-   *  Standard operators for Educibles including those needed
-   *  by for comprehensions.
-   */
-  implicit class EductionOps[G, A]( g: G )(implicit e: Educible[G, A]) {
-    def map[B](f: A => B) = view(g, ops.map(f))
-    def flatMap[H, B](f: A => H)(implicit e1: Educible[H, B]) = view(g, ops.flatMap(f))
-    def >>=[H, B](f: A => H)(implicit e1: Educible[H, B]) = flatMap(f)
-    def >>[H, B]( k: => H )(implicit e1: Educible[H, B]) = flatMap(_ => k)
-    def withFilter(p: A => Boolean) = view(g, ops.filter(p))
-  }
 
   /**
    * This helper performs the basic transformation for a stateless transducer.
