@@ -1,6 +1,6 @@
 package transducers
 
-trait Views { ops: Transducers with Operators =>
+trait Views { ops: Transducers  =>
 
   /**
    * A lazily evaluated data source consisting of a base which is educible and a transducer.
@@ -29,15 +29,4 @@ trait Views { ops: Transducers with Operators =>
   def view[G, B](g: G)(implicit e: Educible[G, B]): View[B] = view[G, B, B](g, cat[B])
 
 
-  /**
-   *  Standard operators for Educibles including those needed
-   *  by for comprehensions implemented as Views.
-   */
-  implicit class EductionOps[G, A]( g: G )(implicit e: Educible[G, A]) {
-    def map[B](f: A => B) = view(g, ops.map(f))
-    def flatMap[H, B](f: A => H)(implicit e1: Educible[H, B]) = view(g, ops.flatMap(f))
-    def >>=[H, B](f: A => H)(implicit e1: Educible[H, B]) = flatMap(f)
-    def >>[H, B]( k: => H )(implicit e1: Educible[H, B]) = flatMap(_ => k)
-    def withFilter(p: A => Boolean) = view(g, ops.filter(p))
-  }
 }

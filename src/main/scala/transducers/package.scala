@@ -5,3 +5,4 @@ package object transducers
   with Educers
   with Builders
   with Aggregates
+  with Syntax
