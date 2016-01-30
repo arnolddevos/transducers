@@ -4,7 +4,7 @@ trait Syntax { ops: Transducers with Views with Operators =>
   implicit class TransducerOps[A, B]( rhs: Transducer[A, B] ) {
 
     /**
-     * Compose two transducers.
+     * Compose two transducers forming a new transducer.
      */
     def ->:[C]( lhs: Transducer[B, C]): Transducer[A, C] = rhs andThen lhs
   }
@@ -12,7 +12,7 @@ trait Syntax { ops: Transducers with Views with Operators =>
   implicit class ReducerOps[A, S]( rhs: Reducer[A, S]) {
 
     /**
-     * Compose reducer with transducer.
+     * Compose reducer with transducer forming a new reducer.
      */
     def ->:[B]( lhs: Transducer[A, B]): Reducer[B, S] = lhs apply rhs
   }
@@ -20,12 +20,12 @@ trait Syntax { ops: Transducers with Views with Operators =>
   implicit class EductionOps[G, A]( g: G )( implicit e: Educible[G, A]) {
 
     /**
-     * Educe and reduce operator.
+     * Educe values and run a reduction.
      */
     def :-/[S]( rhs: Reducer[A, S]): Context[S] = e.educe(g, rhs)
 
     /**
-     * View operator.
+     * Compose an educible with a transducer forming a View.
      */
     def :->[B]( rhs: Transducer[B, A]): View[B] = view(g, rhs)
   
