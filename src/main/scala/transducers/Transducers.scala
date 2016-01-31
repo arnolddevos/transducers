@@ -72,13 +72,13 @@ trait Transducers {
     def educe[S](g: G, f: Reducer[A, S]): Context[S]
   }
 
-  def educe[G, A, S](g: G, f: Reducer[A, S])(implicit e: Educible[G, A]): Context[S] =
+  def reduce[G, A, S](g: G, f: Reducer[A, S])(implicit e: Educible[G, A]): Context[S] =
     e.educe(g, f)
 
   /**
    * Apply a Reducer of B's to an Educible of A's using a transducer from A's to B's
    */
   def transduce[G, A, B, S](g: G, t: Transducer[B, A], f: Reducer[B, S])(implicit e: Educible[G, A]): Context[S] = 
-    educe(g, t(f))
+    reduce(g, t(f))
 
 }

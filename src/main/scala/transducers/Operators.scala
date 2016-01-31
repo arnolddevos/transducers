@@ -53,7 +53,7 @@ trait Operators { this: Transducers =>
           def isReduced(s: State) = f.isReduced(s)
           def complete(s: State) = s
         }
-        educe(g(b), inner)
+        reduce(g(b), inner)
     }
   }
 
