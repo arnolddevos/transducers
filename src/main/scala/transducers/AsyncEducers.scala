@@ -42,4 +42,17 @@ trait AsyncEducers { this: Transducers =>
       else mapContext(f(s0, xs.get))(f.complete)
     }
   }
+
+  def integrate[A, S]( f: Reducer[A, S]): Transducer[S, A] = new Transducer[S, A] {
+    def apply[T]( h: Reducer[S, T]): Reducer[A, T] = new Reducer[A, T] {
+      type State = (f.State, h.State)
+      def init = (f.init, h.init)
+      def apply(s: State, a: A): Context[State] = {
+        val cs1 = f(s._1, a)
+        bindContext(cs1)( s1 => mapContext(h(s._2, f.complete(s._1)))(s2 => (s1, s2)))
+      }
+      def isReduced(s: State) = f.isReduced(s._1) || h.isReduced(s._2)
+      def complete(s: State) = h.complete(s._2)
+    }
+  }
 }
