@@ -25,7 +25,7 @@ trait Operators { this: Transducers =>
   /**
    * Fundamental transducer for map.
    */
-  def map[A, B](f: B => A) = new Transducer[A, B] {
+  def map[A, B](f: B => A): Transducer[A, B] = new Transducer[A, B] {
     def apply[S](r: Reducer[A, S]) = proxy(r) {
       (s, b) => r(s, f(b))
     }
@@ -34,7 +34,7 @@ trait Operators { this: Transducers =>
   /**
    * Fundamental transducer for filter.
    */
-  def filter[A](p: A => Boolean) = new Transducer[A, A] {
+  def filter[A](p: A => Boolean): Transducer[A, A] = new Transducer[A, A] {
     def apply[S](r: Reducer[A, S]) = proxy(r) {
       (s, a) => if(p(a)) r(s, a) else inContext(s)
     }
@@ -43,7 +43,7 @@ trait Operators { this: Transducers =>
   /**
    * Fundamental transducer for flatMap.
    */
-  def flatMap[A, B, G](g: B => G)(implicit e: Educible[G, A]) = new Transducer[A, B] {
+  def flatMap[A, B, G](g: B => G)(implicit e: Educible[G, A]): Transducer[A, B] = new Transducer[A, B] {
     def apply[S](f: Reducer[A, S]) = proxy(f) {
       (s0, b) =>
         val inner = new Reducer[A, f.State] {
@@ -64,7 +64,7 @@ trait Operators { this: Transducers =>
    *  with a boolean tracking the predicate value.
    *
    */
-  def takeWhile[A](p: A => Boolean) = new Transducer[A, A] {
+  def takeWhile[A](p: A => Boolean): Transducer[A, A] = new Transducer[A, A] {
     def apply[S](f: Reducer[A, S]) = new Reducer[A, S] {
       type State = (f.State, Boolean)
       def init = (f.init, true)
@@ -83,7 +83,7 @@ trait Operators { this: Transducers =>
    *  the predicate value.
    *
    */
-  def dropWhile[A](p: A => Boolean) = new Transducer[A, A] {
+  def dropWhile[A](p: A => Boolean): Transducer[A, A] = new Transducer[A, A] {
     def apply[S](f: Reducer[A, S]) = new Reducer[A, S] {
       type State = (f.State, Boolean)
       def init = (f.init, true)
@@ -101,7 +101,7 @@ trait Operators { this: Transducers =>
    * Augments the reduction state with an integer
    * for the remaining number of elements to take.
    */
-  def take[A](n: Int) = new Transducer[A, A] {
+  def take[A](n: Int): Transducer[A, A] = new Transducer[A, A] {
     def apply[S](r: Reducer[A, S]) = new Reducer[A, S] {
       type State = (r.State, Int)
       def init = (r.init, n)
@@ -119,7 +119,7 @@ trait Operators { this: Transducers =>
    * Augments the reduction state with an integer
    * for the remaining number of elements to drop.
    */
-  def drop[A](n: Int) = new Transducer[A, A] {
+  def drop[A](n: Int): Transducer[A, A] = new Transducer[A, A] {
     def apply[S](r: Reducer[A, S]) = new Reducer[A, S] {
       type State = (r.State, Int)
       def init = (r.init, n)
