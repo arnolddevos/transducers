@@ -1,7 +1,7 @@
 package transducers
 
 /**
- *  Realise Transducers for the unlifted case where 
+ *  Realise Transducers for the unlifted case where
  *  a reduction step returns the new state directly as a value.
  */
 trait Educers { this: Transducers =>
@@ -15,7 +15,7 @@ trait Educers { this: Transducers =>
       @annotation.tailrec
       def loop( xs: List[X], s: f.State ): S = {
         if(xs.isEmpty || f.isReduced(s)) f.complete(s)
-        else loop(xs.tail, f(s, xs.head)) 
+        else loop(xs.tail, f(s, xs.head))
       }
       loop(xs, f.init)
     }
@@ -32,24 +32,24 @@ trait Educers { this: Transducers =>
   implicit def iteratorIsEducible[X] = new Educible[Iterator[X], X] {
     def educe[S]( xs: Iterator[X], f: Reducer[X, S]): S = {
       var s = f.init
-      while(xs.hasNext && ! f.isReduced(s)) 
+      while(xs.hasNext && ! f.isReduced(s))
         s = f(s, xs.next)
       f.complete(s)
     }
   }
 
   implicit def iterableIsEducible[X] = new Educible[Iterable[X], X] {
-    def educe[S]( xs: Iterable[X], f: Reducer[X, S]): S = 
+    def educe[S]( xs: Iterable[X], f: Reducer[X, S]): S =
       iteratorIsEducible.educe[S](xs.iterator, f)
   }
 
   implicit def vectorIsEducible[X] = new Educible[Vector[X], X] {
-    def educe[S]( xs: Vector[X], f: Reducer[X, S]): S = 
+    def educe[S]( xs: Vector[X], f: Reducer[X, S]): S =
       iteratorIsEducible.educe[S](xs.iterator, f)
   }
 
   implicit def setIsEducible[X] = new Educible[Set[X], X] {
-    def educe[S]( xs: Set[X], f: Reducer[X, S]): S = 
+    def educe[S]( xs: Set[X], f: Reducer[X, S]): S =
       iteratorIsEducible.educe[S](xs.iterator, f)
   }
 
