@@ -65,4 +65,17 @@ trait Educers { this: Transducers =>
       def complete(s: State) = h.complete(s._2)
     }
   }
+
+  def transducer[A, B, T](t0: T)(f: (T, A) => (T, B)): Transducer[B, A] = new Transducer[B, A] {
+    def apply[S](r: Reducer[B, S]) = new Reducer[A, S] {
+      type State = (r.State, T)
+      def init = (r.init, t0)
+      def apply(s: State, a: A): State = {
+        val (t, b) = f(s._2, a)
+        (r(s._1, b), t)
+      }
+      def isReduced(s: State) = r.isReduced(s._1)
+      def complete(s: State): S = r.complete(s._1)
+    }
+  }
 }
