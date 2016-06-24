@@ -6,3 +6,4 @@ package object transducers
   with Builders
   with Aggregates
   with Syntax
+  with ContextIsId

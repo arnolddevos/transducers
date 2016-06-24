@@ -4,7 +4,7 @@ import collection.mutable.{Builder, ListBuffer, ArrayBuilder}
 import collection.immutable.VectorBuilder
 import reflect.ClassTag
 
-trait Builders { this: Transducers =>
+trait Builders { this: Transducers with ContextIsPure =>
 
   def buildString[X](s1: String="", s2: String="", s3: String=""): Reducer[X, String] = new Reducer[X, String] {
     class State {

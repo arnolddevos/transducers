@@ -1,18 +1,11 @@
 package transducers
 
-trait Operators { this: Transducers =>
-
-  /**
-   *  The stock transducers require that Context is a functor.
-   *  A map and a lifting operation are needed.
-   */
-  def mapContext[S, T](c: Context[S])( f: S => T ): Context[T]
-
+trait Operators { this: Transducers with ContextIsFunctor =>
 
   /**
    * This helper performs the basic transformation for a stateless transducer.
    */
-  private def proxy[A, B, S](f: Reducer[A, S])(g: (f.State, B) => Context[f.State]) = 
+  private def proxy[A, B, S](f: Reducer[A, S])(g: (f.State, B) => Context[f.State]) =
     new Reducer[B, S] {
       type State = f.State
       def init = f.init
@@ -68,8 +61,8 @@ trait Operators { this: Transducers =>
     def apply[S](f: Reducer[A, S]) = new Reducer[A, S] {
       type State = (f.State, Boolean)
       def init = (f.init, true)
-      def apply(s: State, a: A) = 
-        if(s._2 && p(a)) mapContext(f(s._1, a))((_, true)) 
+      def apply(s: State, a: A) =
+        if(s._2 && p(a)) mapContext(f(s._1, a))((_, true))
         else inContext((s._1, false))
       def isReduced(s: State) = ! s._2  || f.isReduced(s._1)
       def complete(s: State) = f.complete(s._1)
@@ -79,7 +72,7 @@ trait Operators { this: Transducers =>
   /**
    *  Drops the initial series of elements that satisfy a predicate.
    *
-   *  Augments the reduction state with a boolean tracking 
+   *  Augments the reduction state with a boolean tracking
    *  the predicate value.
    *
    */
@@ -87,7 +80,7 @@ trait Operators { this: Transducers =>
     def apply[S](f: Reducer[A, S]) = new Reducer[A, S] {
       type State = (f.State, Boolean)
       def init = (f.init, true)
-      def apply(s: State, a: A) = 
+      def apply(s: State, a: A) =
         if(s._2 && p(a)) inContext((s._1, true))
         else mapContext(f(s._1, a))((_, false))
       def isReduced(s: State) = ! s._2  && f.isReduced(s._1)
@@ -97,7 +90,7 @@ trait Operators { this: Transducers =>
 
   /**
    * Takes the first n elements.
-   * 
+   *
    * Augments the reduction state with an integer
    * for the remaining number of elements to take.
    */
@@ -106,7 +99,7 @@ trait Operators { this: Transducers =>
       type State = (r.State, Int)
       def init = (r.init, n)
       def apply(s: State, a: A): Context[State] =
-        if(s._2 > 0) mapContext(r(s._1, a))((_, s._2-1)) 
+        if(s._2 > 0) mapContext(r(s._1, a))((_, s._2-1))
         else inContext(s)
       def isReduced(s: State) = s._2 <= 0 || r.isReduced(s._1)
       def complete(s: State): S = r.complete(s._1)
@@ -130,4 +123,21 @@ trait Operators { this: Transducers =>
       def complete(s: State): S = r.complete(s._1)
     }
   }
+
+  /**
+   * An unconditional stateful transducer
+   */
+  def transducer[A, B, T](t0: T)(f: (T, A) => (T, B)): Transducer[B, A] = new Transducer[B, A] {
+    def apply[S](r: Reducer[B, S]) = new Reducer[A, S] {
+      type State = (r.State, T)
+      def init = (r.init, t0)
+      def apply(s: State, a: A): Context[State] = {
+        val (t, b) = f(s._2, a)
+        mapContext(r(s._1, b))((_, t))
+      }
+      def isReduced(s: State) = r.isReduced(s._1)
+      def complete(s: State): S = r.complete(s._1)
+    }
+  }
+
 }

@@ -5,21 +5,20 @@ import scala.language.higherKinds
 trait Transducers {
 
   /**
-   * Context could be Try, Future, Task, Process or other higher kinded type 
+   * Context could be Try, Future, Task, Process or other higher kinded type
    * within which values are produced.
    *
-   * In the simple case, Context[S] = S and transducers work directly 
+   * In the simple case, Context[S] = S and transducers work directly
    * on series of values similar to standard library collection methods.
    */
   type Context[+S]
-  def inContext[S](s: S): Context[S]
 
   /**
-   * Reducer over A's producing an S. 
+   * Reducer over A's producing an S.
    *
    * The internal state of the reducer is of type State (not always the same as S).
    *
-   * The init, complete and apply methods correspond to 
+   * The init, complete and apply methods correspond to
    * the 0, 1 and 2 arity functions of a clojure reducer.
    * The isReduced predicate on the state says the reduction should stop.
    * That is, apply(s, a) should not be called if isReduced(s).
@@ -36,7 +35,7 @@ trait Transducers {
   }
 
   /**
-   * Make a basic reducer fom an initial value and function. 
+   * Make a basic reducer fom an initial value and function.
    * (State and result S will be the same type.)
    */
   def reducer[A, S](s: S)(f: (S, A) => Context[S]): Reducer[A, S] = new Reducer[A, S] {
@@ -78,7 +77,7 @@ trait Transducers {
   /**
    * Apply a Reducer of B's to an Educible of A's using a transducer from A's to B's
    */
-  def transduce[G, A, B, S](g: G, t: Transducer[B, A], f: Reducer[B, S])(implicit e: Educible[G, A]): Context[S] = 
+  def transduce[G, A, B, S](g: G, t: Transducer[B, A], f: Reducer[B, S])(implicit e: Educible[G, A]): Context[S] =
     reduce(g, t(f))
 
 }

@@ -1,14 +1,6 @@
 package transducers
 
-/**
- *  Realise Transducers for the unlifted case where
- *  a reduction step returns the new state directly as a value.
- */
-trait Educers { this: Transducers =>
-
-  type Context[+S] = S
-  def inContext[S](s: S) = s
-  def mapContext[S, T](s: S)( f: S => T ) = f(s)
+trait Educers { this: Transducers with ContextIsId =>
 
   implicit def listIsEducible[X] = new Educible[List[X], X] {
     def educe[S]( xs: List[X], f: Reducer[X, S]): S = {
@@ -51,45 +43,5 @@ trait Educers { this: Transducers =>
   implicit def setIsEducible[X] = new Educible[Set[X], X] {
     def educe[S]( xs: Set[X], f: Reducer[X, S]): S =
       iteratorIsEducible.educe[S](xs.iterator, f)
-  }
-
-  def integrate[A, S]( f: Reducer[A, S]): Transducer[S, A] = new Transducer[S, A] {
-    def apply[T]( h: Reducer[S, T]): Reducer[A, T] = new Reducer[A, T] {
-      type State = (f.State, h.State)
-      def init = (f.init, h.init)
-      def apply(s: State, a: A): State = {
-        val s1 = f(s._1, a)
-        (s1, h(s._2, f.complete(s._1)))
-      }
-      def isReduced(s: State) = f.isReduced(s._1) || h.isReduced(s._2)
-      def complete(s: State) = h.complete(s._2)
-    }
-  }
-
-  def spans[A, S]( f: Reducer[A, S]): Transducer[S, A] = new Transducer[S, A] {
-    def apply[T]( h: Reducer[S, T]): Reducer[A, T] = new Reducer[A, T] {
-      type State = (f.State, h.State)
-      def init = (f.init, h.init)
-      @annotation.tailrec
-      def apply(s: State, a: A): State = {
-        if(f.isReduced(s._1)) apply((f.init, h(s._2, f.complete(s._1))), a)
-        else (f(s._1, a), s._2)
-      }
-      def isReduced(s: State) =  h.isReduced(s._2)
-      def complete(s: State) = h.complete(s._2)
-    }
-  }
-
-  def transducer[A, B, T](t0: T)(f: (T, A) => (T, B)): Transducer[B, A] = new Transducer[B, A] {
-    def apply[S](r: Reducer[B, S]) = new Reducer[A, S] {
-      type State = (r.State, T)
-      def init = (r.init, t0)
-      def apply(s: State, a: A): State = {
-        val (t, b) = f(s._2, a)
-        (r(s._1, b), t)
-      }
-      def isReduced(s: State) = r.isReduced(s._1)
-      def complete(s: State): S = r.complete(s._1)
-    }
   }
 }
