@@ -109,4 +109,23 @@ trait HigherOrder { this: Transducers with ContextIsId =>
       def complete(s: State): T = h.complete(s.sh)
     }
   }
+
+  def mapReducer[A, S, T](g: S => T): Reducer[A, S] => Reducer[A, T] = {
+    f =>  new Reducer[A, T] {
+      type State = f.State
+      def init = f.init
+      def apply(s: State, a: A) = f(s, a)
+      def isReduced(s: State) =  f.isReduced(s)
+      def complete(s: State) =  g(f.complete(s))
+    }
+  }
+
+  trait AllowConcat[S, T] {
+    def map[A](f1: Reducer[A, S]): Reducer[A, T]
+  }
+
+  implicit class ReducerCominators[A, S]( f: Reducer[A, S]) {
+    def map[T](g: S => T): Reducer[A, T] =  mapReducer(g)(f)
+    def ~[T](f1: Reducer[A, T])(implicit e: AllowConcat[S, T]) = ???
+  }
 }
