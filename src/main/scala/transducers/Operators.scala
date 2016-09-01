@@ -34,6 +34,15 @@ trait Operators { this: Transducers with ContextIsFunctor =>
   }
 
   /**
+   * Map with a partial function
+   */
+  def collect[A, B](pf: PartialFunction[B, A]): Transducer[A, B] = new Transducer[A, B] {
+    def apply[S](r: Reducer[A, S]) = proxy(r) {
+      (s, b) => pf.andThen(r(s, _)).applyOrElse(b, (_: B) => inContext(s))
+    }
+  }
+
+  /**
    * Fundamental transducer for flatMap.
    */
   def flatMap[A, B, G](g: B => G)(implicit e: Educible[G, A]): Transducer[A, B] = new Transducer[A, B] {
