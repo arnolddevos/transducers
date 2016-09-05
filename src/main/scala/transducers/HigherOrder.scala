@@ -82,6 +82,7 @@ trait HigherOrder { this: Transducers with ContextIsId =>
       case class S2( sh: h.State, sb: fb.State) extends State
       case class S3( sh: h.State ) extends State
 
+      @annotation.tailrec
       def advance(s: State): State = s match {
         case S1(sh, sa) =>
           if (h.isReduced(sh)) S3(sh)
