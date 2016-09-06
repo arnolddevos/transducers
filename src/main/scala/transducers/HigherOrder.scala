@@ -17,15 +17,28 @@ trait HigherOrder { this: Transducers with ContextIsId =>
 
   def spans[A, S]( f: Reducer[A, S]): Transducer[S, A] = new Transducer[S, A] {
     def apply[T]( h: Reducer[S, T]): Reducer[A, T] = new Reducer[A, T] {
-      type State = (f.State, h.State)
-      def init = (f.init, h.init)
+
+      sealed trait State { def hs: h.State }
+      case class Ready( hs: h.State) extends State
+      case class Running( fs: f.State, hs: h.State) extends State
+
+      def init = Ready(h.init)
+
       @annotation.tailrec
-      def apply(s: State, a: A): State = {
-        if(f.isReduced(s._1)) apply((f.init, h(s._2, f.complete(s._1))), a)
-        else (f(s._1, a), s._2)
+      def apply(s: State, a: A): State = s match {
+        case Ready(hs) => apply(Running(f.init, hs), a)
+        case Running(fs, hs) =>
+          if(f.isReduced(fs)) apply(Running(f.init, h(hs, f.complete(fs))), a)
+          else Running(f(fs, a), hs)
       }
-      def isReduced(s: State) =  h.isReduced(s._2)
-      def complete(s: State) = h.complete(s._2)
+      def isReduced(s: State) =  h.isReduced(s.hs)
+
+      def complete(s: State) = s match {
+        case Ready(hs) => h.complete(hs)
+        case Running(fs, hs) =>
+          if(h.isReduced(hs)) h.complete(hs)
+          else h.complete(h(hs, f.complete(fs)))
+      }
     }
   }
 
