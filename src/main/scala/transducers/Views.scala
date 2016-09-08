@@ -1,6 +1,6 @@
 package transducers
 
-trait Views { ops: Transducers with Operators with ContextIsFunctor =>
+trait Views { ops: Transducers with Operators with ContextIsPure =>
 
   /**
    * A lazily evaluated data source consisting of a base which is educible and a transducer.

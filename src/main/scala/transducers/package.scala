@@ -2,6 +2,7 @@ package object transducers
   extends Transducers
   with Views
   with Operators
+  with ImmutableStateOperators
   with Educers
   with Builders
   with Aggregates

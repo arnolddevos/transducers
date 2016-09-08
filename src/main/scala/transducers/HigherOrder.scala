@@ -42,18 +42,18 @@ trait HigherOrder { this: Transducers with ContextIsId =>
     }
   }
 
-  sealed trait Reduction[+A, +S]
+  sealed trait ReductionResult[+A, +S]
 
-  object Reduction {
-    case class Perfect[+S](s: S) extends Reduction[Nothing, S]
-    case class Partial[+A, +S](a: A, s: S) extends Reduction[A, S]
+  object ReductionResult {
+    case class Perfect[+S](s: S) extends ReductionResult[Nothing, S]
+    case class Partial[+A, +S](a: A, s: S) extends ReductionResult[A, S]
   }
 
-  def takeUntil[A, S](p: A => Boolean)(f: Reducer[A, S]): Reducer[A,  Reduction[A, S]] = {
-    new Reducer[A,  Reduction[A, S]] {
+  def takeUntil[A, S](p: A => Boolean)(f: Reducer[A, S]): Reducer[A,  ReductionResult[A, S]] = {
+    new Reducer[A,  ReductionResult[A, S]] {
 
-      import Reduction._
-      type State = Reduction[A, f.State]
+      import ReductionResult._
+      type State = ReductionResult[A, f.State]
       def init = Perfect(f.init)
 
       def apply(s: State, a: A) = s match {
@@ -66,7 +66,7 @@ trait HigherOrder { this: Transducers with ContextIsId =>
         case _ => true
       }
 
-      def complete(s: State): Reduction[A, S] = s match {
+      def complete(s: State): ReductionResult[A, S] = s match {
         case Perfect(fs) => Perfect(f.complete(fs))
         case Partial(a, fs) => Partial(a, f.complete(fs))
       }
