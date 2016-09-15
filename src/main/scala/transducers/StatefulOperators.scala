@@ -12,10 +12,10 @@ trait StatefulOperators { this: Transducers with ContextIsId =>
     def inner[S](r: Reducer[A, S]): MutableReduction[B, S]
     def apply[S](r: Reducer[A, S]): Reducer[B, S] = new Reducer[B, S] {
       type State = MutableReduction[B, S]
-      def init = inner(r)
-      def isReduced(s: State) = s.isReduced
-      def apply(s: State, b: B) = { s.update(b); s }
-      def complete(s: State) = s.complete
+      final def init = inner(r)
+      final def isReduced(s: State) = s.isReduced
+      final def apply(s: State, b: B) = { s.update(b); s }
+      final def complete(s: State) = s.complete
     }
   }
 
