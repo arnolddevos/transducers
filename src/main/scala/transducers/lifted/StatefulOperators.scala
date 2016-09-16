@@ -143,6 +143,24 @@ trait StatefulOperators { this: Transducers with ContextIsMonad =>
     }
   }
 
+  def interleave[A](an: A): Transducer[A, A] = new StatefulTransducer[A, A] {
+    def inner[S](f: Reducer[A, S]) = {
+      def loop(sep: Boolean, s: f.State): Reduction[A, S] = new Reduction[A, S] {
+        def update(a: A) =
+          if(sep)
+            f(s, an) >>= { s1 =>
+              if(f.isReduced(s1)) inContext(loop(true, s1))
+              else f(s1, a) map (loop(true, _))
+            }
+          else f(s, a) map (loop(true, _))
+        def isReduced = f.isReduced(s)
+        def complete = f.complete(s)
+      }
+      f.init map (loop(false, _))
+    }
+  }
+
+
   def integrate[A, S](g: Reducer[A, S]): Transducer[S, A] = new StatefulTransducer[S, A] {
     def inner[T](f: Reducer[S, T]) = {
       def loop(sg: g.State, sf: f.State): Reduction[A, T] = new Reduction[A, T] {
