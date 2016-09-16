@@ -13,13 +13,6 @@ trait ContextIsId extends ContextIsMonad { this: Transducers =>
 }
 
 /**
- * The ability to lift a value into Context is required.
- */
-trait ContextIsPure { this: Transducers =>
-  def inContext[S](s: S): Context[S]
-}
-
-/**
  *  Context is required to be a functor.
  *  Definitions are needed for the operations,
  *  declared here.
@@ -27,7 +20,7 @@ trait ContextIsPure { this: Transducers =>
  * If there is a Functor typeclass instance for Context
  * (from scalaz or cats perhaps) then mapContext can delegate to it.
  */
-trait ContextIsFunctor extends ContextIsPure { this: Transducers =>
+trait ContextIsFunctor { this: Transducers =>
   def mapContext[S, T](c: Context[S])( f: S => T ): Context[T]
 }
 

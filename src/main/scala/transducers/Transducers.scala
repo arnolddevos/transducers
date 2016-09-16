@@ -12,6 +12,7 @@ trait Transducers {
    * on series of values similar to standard library collection methods.
    */
   type Context[+S]
+  def inContext[S](s: S): Context[S]
 
   /**
    * Reducer over A's producing an S.

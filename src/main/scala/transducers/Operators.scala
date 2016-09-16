@@ -1,6 +1,6 @@
 package transducers
 
-trait Operators { this: Transducers with ContextIsPure =>
+trait Operators { this: Transducers =>
 
   /**
    * This helper performs the basic transformation for a stateless transducer.
