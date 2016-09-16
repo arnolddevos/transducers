@@ -5,10 +5,10 @@ trait AsyncEducers { this: Transducers with ContextIsMonad =>
   implicit def listIsEducible[X] = new Educible[List[X], X] {
     def educe[S]( xs: List[X], f: Reducer[X, S]): Context[S] = {
       def loop( xs: List[X], s: f.State ): Context[S] = {
-        if(xs.isEmpty || f.isReduced(s)) inContext(f.complete(s))
+        if(xs.isEmpty || f.isReduced(s)) f.complete(s)
         else bindContext(f(s, xs.head))(loop(xs.tail, _))
       }
-      loop(xs, f.init)
+      bindContext(f.init)(loop(xs, _))
     }
   }
 
@@ -16,31 +16,19 @@ trait AsyncEducers { this: Transducers with ContextIsMonad =>
     def educe[S]( xs: Vector[X], f: Reducer[X, S]): Context[S] = {
       val mx = xs.size
       def loop( ix: Int, s: f.State ): Context[S] = {
-        if(ix >= mx || f.isReduced(s)) inContext(f.complete(s))
+        if(ix >= mx || f.isReduced(s)) f.complete(s)
         else bindContext(f(s, xs(ix)))(loop(ix+1, _))
       }
-      loop(0, f.init)
+      bindContext(f.init)(loop(0, _))
     }
   }
 
   implicit def optionIsEducible[X] = new Educible[Option[X], X] {
     def educe[S]( xs: Option[X], f: Reducer[X, S]): Context[S] = {
-      val s0 = f.init
-      if(xs.isEmpty || f.isReduced(s0)) inContext(f.complete(s0))
-      else mapContext(f(s0, xs.get))(f.complete)
-    }
-  }
-
-  def integrate[A, S]( f: Reducer[A, S]): Transducer[S, A] = new Transducer[S, A] {
-    def apply[T]( h: Reducer[S, T]): Reducer[A, T] = new Reducer[A, T] {
-      type State = (f.State, h.State)
-      def init = (f.init, h.init)
-      def apply(s: State, a: A): Context[State] = {
-        val cs1 = f(s._1, a)
-        bindContext(cs1)( s1 => mapContext(h(s._2, f.complete(s._1)))(s2 => (s1, s2)))
+      bindContext(f.init) { s0 =>
+        if(xs.isEmpty || f.isReduced(s0)) f.complete(s0)
+        else bindContext(f(s0, xs.get))(f.complete)
       }
-      def isReduced(s: State) = f.isReduced(s._1) || h.isReduced(s._2)
-      def complete(s: State) = h.complete(s._2)
     }
   }
 }

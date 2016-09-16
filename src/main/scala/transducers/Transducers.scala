@@ -29,10 +29,10 @@ trait Transducers {
    */
   trait Reducer[-A, +S] {
     type State
-    def init: State
+    def init: Context[State]
     def apply(s: State, a: A): Context[State]
     def isReduced(s: State): Boolean
-    def complete(s: State): S
+    def complete(s: State): Context[S]
   }
 
   /**
@@ -41,10 +41,10 @@ trait Transducers {
    */
   def reducer[A, S](s: S)(f: (S, A) => Context[S]): Reducer[A, S] = new Reducer[A, S] {
     type State = S
-    def init: S = s
-    def apply(s: S, a: A): Context[S] = f(s, a)
-    def isReduced(s: S): Boolean = false
-    def complete(s: S): S = s
+    def init = inContext(s)
+    def apply(s: S, a: A) = f(s, a)
+    def isReduced(s: S) = false
+    def complete(s: S) = inContext(s)
   }
 
   /**
