@@ -1,6 +1,6 @@
 object Example extends App {
 
-  import transducers._
+  import transducers.api._
 
   {
     val l = List(1, 2, 3)
