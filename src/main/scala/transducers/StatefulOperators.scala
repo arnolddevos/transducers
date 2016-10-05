@@ -8,14 +8,17 @@ trait StatefulOperators { this: Transducers with ContextIsId =>
     def complete: S
   }
 
+  abstract class MutableReducer[A, S] extends Reducer[A, S] {
+    type State = MutableReduction[A, S]
+    final def isReduced(s: State) = s.isReduced
+    final def apply(s: State, a: A) = { s.update(a); s }
+    final def complete(s: State) = s.complete
+  }
+
   abstract class StatefulTransducer[A, B] extends Transducer[A, B] {
     def inner[S](r: Reducer[A, S]): MutableReduction[B, S]
-    def apply[S](r: Reducer[A, S]): Reducer[B, S] = new Reducer[B, S] {
-      type State = MutableReduction[B, S]
+    def apply[S](r: Reducer[A, S]): Reducer[B, S] = new MutableReducer[B, S] {
       final def init = inner(r)
-      final def isReduced(s: State) = s.isReduced
-      final def apply(s: State, b: B) = { s.update(b); s }
-      final def complete(s: State) = s.complete
     }
   }
 
@@ -56,6 +59,30 @@ trait StatefulOperators { this: Transducers with ContextIsId =>
       def update(a: A) = if(pass || ! p(a)) { s = f(s, a); pass = true }
       def isReduced = pass && f.isReduced(s)
       def complete = f.complete(s)
+    }
+  }
+
+  def group[A, T, D](g: Reducer[A, T])(p: A => D) = new StatefulTransducer[T, A] {
+    def inner[S](f: Reducer[T, S]) = new MutableReduction[A, S] {
+      var s = f.init
+      var t = g.init
+      var d: Option[D] = None
+      def update( a: A) = {
+        val i = p(a)
+        if(! d.contains(i)) {
+          if(d.isDefined) {
+            s = f(s, g.complete(t))
+            t = g.init
+          }
+          d = Some(i)
+        }
+        if(!g.isReduced(t)) t = g(t, a)
+      }
+      def isReduced = f.isReduced(s)
+      def complete = {
+        if(d.isDefined && !f.isReduced(s)) s = f(s, g.complete(t))
+        f.complete(s)
+      }
     }
   }
 
