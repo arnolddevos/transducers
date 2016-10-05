@@ -61,6 +61,9 @@ trait Transducers {
     }
   }
 
+  /** Standard type alias with parameters in the _right_ order for many people */
+  type Txducer[-A, +B] = Transducer[B, A]
+
   /**
    *  A transducer that effects no change.
    */
