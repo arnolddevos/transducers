@@ -58,4 +58,12 @@ trait Builders { this: Transducers =>
     def isReduced(xs: Option[X]) = xs.isDefined
     def complete(xs: Option[X]) = inContext(xs)
   }
+
+  def lastOption[X]: Reducer[X, Option[X]] = new Reducer[X, Option[X]] {
+    type State = Option[X]
+    def init = inContext(None)
+    def apply(xs: Option[X], x: X) = inContext(Some(x))
+    def isReduced(xs: Option[X]) = false
+    def complete(xs: Option[X]) = inContext(xs)
+  }
 }
