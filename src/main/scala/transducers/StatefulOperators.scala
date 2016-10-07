@@ -62,25 +62,26 @@ trait StatefulOperators { this: Transducers with ContextIsId =>
     }
   }
 
-  def group[A, T, D](g: Reducer[A, T])(p: A => D) = new StatefulTransducer[T, A] {
-    def inner[S](f: Reducer[T, S]) = new MutableReduction[A, S] {
+  def group[A, T, D](g: Reducer[A, T])(p: A => D) = new StatefulTransducer[(D, T), A] {
+    def inner[S](f: Reducer[(D, T), S]) = new MutableReduction[A, S] {
       var s = f.init
       var t = g.init
       var d: Option[D] = None
       def update( a: A) = {
         val i = p(a)
-        if(! d.contains(i)) {
-          if(d.isDefined) {
-            s = f(s, g.complete(t))
+        if(d.isEmpty) d = Some(i)
+        else
+          for( j <- d if j != i ) {
+            s = f(s, (j, g.complete(t)))
             t = g.init
+            d = Some(i)
           }
-          d = Some(i)
-        }
         if(!g.isReduced(t)) t = g(t, a)
       }
       def isReduced = f.isReduced(s)
       def complete = {
-        if(d.isDefined && !f.isReduced(s)) s = f(s, g.complete(t))
+        for( j <- d)
+          if(!f.isReduced(s)) s = f(s, (j, g.complete(t)))
         f.complete(s)
       }
     }
