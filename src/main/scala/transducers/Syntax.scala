@@ -1,12 +1,17 @@
 package transducers
 
-trait Syntax { this: Transducers =>
+trait Syntax { this: Transducers with Views =>
   implicit class TransducerOps[A, B]( rhs: Transducer[A, B] ) {
 
     /**
      * Compose two transducers forming a new transducer.
      */
     def ->:[C]( lhs: Transducer[B, C]): Transducer[A, C] = rhs andThen lhs
+    
+    /**
+     * Compose educible with transducer forming an (educible) view.
+     */
+    def ->:[G](lhs: G)(implicit e: Educible[G, B]): View[A] = view(lhs, rhs)
   }
 
   implicit class ReducerOps[A, S]( rhs: Reducer[A, S]) {
