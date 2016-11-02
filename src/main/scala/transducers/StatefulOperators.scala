@@ -115,6 +115,20 @@ trait StatefulOperators { this: Transducers with ContextIsId =>
     }
   }
 
+  def interleave[A](an: A): Transducer[A, A] = new StatefulTransducer[A, A] {
+    def inner[S](f: Reducer[A, S]) = new MutableReduction[A, S] {
+      var sep = false
+      var s = f.init
+      def update(a: A) = {
+        if(sep) s = f(s, an)
+        if( ! f.isReduced(s)) s = f(s, a)
+        sep = true
+      }
+      def isReduced = f.isReduced(s)
+      def complete = f.complete(s)
+    }
+  }
+
   def integrate[A, S]( g: Reducer[A, S]): Transducer[S, A] = new StatefulTransducer[S, A] {
     def inner[T]( f: Reducer[S, T]) = new MutableReduction[A, T] {
       var sg = g.init
