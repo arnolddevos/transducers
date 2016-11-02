@@ -87,6 +87,34 @@ trait StatefulOperators { this: Transducers with ContextIsId =>
     }
   }
 
+  def prefix[A](a0: A): Transducer[A, A] = new Transducer[A, A] {
+    def apply[S](f: Reducer[A, S]): Reducer[A, S] = new Reducer[A, S] {
+      type State = f.State
+
+      def init = {
+        val s0 = f.init
+        if(f.isReduced(s0)) s0
+        else f(s0, a0)
+      }
+
+      def isReduced(s: State) = f.isReduced(s)
+      def apply(s: State, a: A) = f(s, a)
+      def complete(s: State) = f.complete(s)
+    }
+  }
+
+  def suffix[A](an: A): Transducer[A, A] = new Transducer[A, A] {
+    def apply[S](f: Reducer[A, S]): Reducer[A, S] = new Reducer[A, S] {
+      type State = f.State
+      def init = f.init
+      def isReduced(s: State) = f.isReduced(s)
+      def apply(s: State, a: A) = f(s, a)
+      def complete(s: State) =
+        if(f.isReduced(s)) f.complete(s)
+        else f.complete(f(s, an))
+    }
+  }
+
   def integrate[A, S]( g: Reducer[A, S]): Transducer[S, A] = new StatefulTransducer[S, A] {
     def inner[T]( f: Reducer[S, T]) = new MutableReduction[A, T] {
       var sg = g.init
