@@ -22,7 +22,7 @@ trait ContextIsFunctor { this: Transducers =>
   def mapContext[S, T](c: Context[S])( f: S => T ): Context[T]
 
   implicit class ContextMapOp[S](val c: Context[S]) {
-    def map[T](f: S => T) = mapContext(c)(f)
+    def map[T](f: S => T): Context[T] = mapContext(c)(f)
   }
 }
 
