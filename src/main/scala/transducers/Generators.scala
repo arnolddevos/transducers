@@ -173,3 +173,129 @@ trait SeriesDefs { this: Transducers with ContextIsFunctor =>
     }
   }
 }
+
+trait EducerDefs { this: Transducers =>
+
+  trait Educer[-S, +A] { base =>
+    type State
+    def init(s: S): Context[State]
+    def isEduced(s: State): Boolean
+    def extract(s: State): A
+    def apply(s: State): Context[State]
+
+    def next(s: State): Option[(A, Context[State])] =
+      if(isEduced(s)) Some((extract(s), apply(s)))
+      else None
+
+    def map[B](f: A => B): Educer[S, B] = new Educer[S, B] {
+      type State = base.State
+      def init(s: S) = base.init(s)
+      def isEduced(s: State) = base.isEduced(s)
+      def extract(s: State) = f(base.extract(s))
+      def apply(s: State) = base(s)
+    }
+  }
+
+  def singletonEducer[A]: Educer[A, A] = new Educer[A, A] {
+    type State = Option[A]
+    def init(a: A) = inContext(Some(a))
+    def isEduced(s: State) = ! s.isDefined
+    def extract(s: State) = s.get
+    def apply(s: State) = inContext(None)
+  }
+
+  def optionEducer[A]: Educer[Option[A], A] = new Educer[Option[A], A] {
+    type State = Option[A]
+    def init(as: Option[A]) = inContext(as)
+    def isEduced(s: State) = ! s.isDefined
+    def extract(s: State) = s.get
+    def apply(s: State) = inContext(None)
+  }
+
+  def listEducer[A]: Educer[List[A], A] = new Educer[List[A], A] {
+    type State = List[A]
+    def init(as: List[A]) = inContext(as)
+    def isEduced(s: State) = s.isEmpty
+    def extract(s: State) = s.head
+    def apply(s: State) = inContext(s.tail)
+  }
+}
+
+trait SeriesEducerDefs { this: Generators with SeriesDefs with EducerDefs with Transducers =>
+
+  import Series._
+
+  abstract class SeriesEducer[S, A] extends Educer[S, A] {
+    type State = Series[A]
+
+    def isEduced(s: State) = s match {
+      case NonEmpty(_, _) => false
+      case Empty => true
+    }
+
+    def extract(s: State) = s match {
+      case NonEmpty(a, _) => a
+      case Empty => ???
+    }
+
+    def apply(s: State) = s match {
+      case NonEmpty(_, t) => t
+      case Empty => ???
+    }
+  }
+
+  def seriesEducer[A] = new SeriesEducer[Series[A], A] {
+    def init(as: Series[A]) = inContext(as)
+  }
+
+  def generatorEducer[A] = new SeriesEducer[Generator[A], A] {
+    def init(as: Generator[A]) = as.next
+  }
+}
+
+trait ComonadDefs { this: EducerDefs with Transducers =>
+  import language.higherKinds
+
+  trait Comonad[G[_]] {
+    def extract[A](g: G[A]): A
+    def map[A, B](g: G[A])(f: A => B): G[B]
+    def extend[A, B](g: G[A])(f: G[A] => B): G[B]
+  }
+
+}
+
+trait SimpleEduction { this: EducerDefs with Transducers with ContextIsId =>
+
+  def transfer[S, T, A](s: S, g: Educer[S, A], f: Reducer[A, T]): T = {
+
+    @annotation.tailrec
+    def loop(sg: g.State, sf: f.State): T = {
+      if(g.isEduced(sg) || f.isReduced(sf)) f.complete(sf)
+      else loop(g(sg), f(sf, g.extract(sg)))
+    }
+
+    loop(g.init(s), f.init)
+  }
+
+  def chainLeft[S, A, B](g1: Educer[S, A], g2: Educer[A, B]): Educer[S, B]
+
+  def chainRight[A, B, S](g: Educer[A, B], f: Reducer[B, S]): Reducer[A, S] = new Reducer[A, S] {
+    type State = f.State
+    def init = f.init
+    def isReduced(s: State) = f.isReduced(s)
+    def complete(s: State) = f.complete(s)
+    def apply(s: State, a: A): State = {
+
+      @annotation.tailrec
+      def pump(s: f.State, t: g.State): f.State =
+        if(g.isEduced(t) || f.isReduced(s)) s
+        else pump(f(s, g.extract(t)), g(t))
+
+      pump(s, g.init(a))
+    }
+  }
+
+  def flip[A, B](g: Educer[A, B]): Transducer[B, A] = new Transducer[B, A] {
+    def apply[S]( f: Reducer[B, S]): Reducer[A, S] = chainRight(g, f)
+  }
+}
