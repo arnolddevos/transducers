@@ -1,6 +1,6 @@
 package transducers
 
-trait Operators { this: Transducers with ContextIsPure =>
+trait Operators { this: Transducers =>
 
   /**
    * This helper performs the basic transformation for a stateless transducer.
@@ -50,10 +50,10 @@ trait Operators { this: Transducers with ContextIsPure =>
       (s0, b) =>
         val inner = new Reducer[A, f.State] {
           type State = f.State
-          def init = s0
+          def init = inContext(s0)
           def apply(s: State, a: A) = f(s, a)
           def isReduced(s: State) = f.isReduced(s)
-          def complete(s: State) = s
+          def complete(s: State) = inContext(s)
         }
         reduce(g(b), inner)
     }

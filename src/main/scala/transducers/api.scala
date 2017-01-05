@@ -1,4 +1,6 @@
-package object transducers
+package transducers
+
+object api
   extends Transducers
   with Views
   with Operators

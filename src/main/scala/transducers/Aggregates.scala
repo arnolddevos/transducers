@@ -1,6 +1,6 @@
 package transducers
 
-trait Aggregates { this: Transducers with ContextIsPure =>
+trait Aggregates { this: Transducers =>
 
   case class AggDouble(sum: Double, squares: Double, max: Double, min: Double, count: Int) {
     def +( x: Double) = AggDouble(

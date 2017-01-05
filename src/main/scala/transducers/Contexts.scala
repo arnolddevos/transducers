@@ -3,20 +3,11 @@ package transducers
 /**
  *  Realise Transducers for the unlifted case where
  *  a reduction step returns the new state directly as a value.
- *  This is the default case, obtained if transducers._ is imported.
+ *  This is the default case, obtained if transducers.api._ is imported.
  */
-trait ContextIsId extends ContextIsMonad { this: Transducers =>
+trait ContextIsId { this: Transducers =>
   type Context[+S] = S
   def inContext[S](s: S) = s
-  def mapContext[S, T](s: S)( f: S => T ) = f(s)
-  def bindContext[S, T](s: S)(f: S => T) = f(s)
-}
-
-/**
- * The ability to lift a value into Context is required.
- */
-trait ContextIsPure { this: Transducers =>
-  def inContext[S](s: S): Context[S]
 }
 
 /**
@@ -27,8 +18,12 @@ trait ContextIsPure { this: Transducers =>
  * If there is a Functor typeclass instance for Context
  * (from scalaz or cats perhaps) then mapContext can delegate to it.
  */
-trait ContextIsFunctor extends ContextIsPure { this: Transducers =>
+trait ContextIsFunctor { this: Transducers =>
   def mapContext[S, T](c: Context[S])( f: S => T ): Context[T]
+
+  implicit class ContextMapOp[S](val c: Context[S]) {
+    def map[T](f: S => T) = mapContext(c)(f)
+  }
 }
 
 /**
@@ -41,4 +36,9 @@ trait ContextIsFunctor extends ContextIsPure { this: Transducers =>
  */
 trait ContextIsMonad extends ContextIsFunctor  { this: Transducers =>
   def bindContext[S, T](c: Context[S])(f: S => Context[T]): Context[T]
+
+  implicit class ContextBindOp[S](val c: Context[S]) {
+    def flatMap[T](f: S => Context[T]) = bindContext(c)(f)
+    def >>=[T](f: S => Context[T]) = bindContext(c)(f)
+  }
 }

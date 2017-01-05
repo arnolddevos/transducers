@@ -8,14 +8,17 @@ trait StatefulOperators { this: Transducers with ContextIsId =>
     def complete: S
   }
 
+  abstract class MutableReducer[A, S] extends Reducer[A, S] {
+    type State = MutableReduction[A, S]
+    final def isReduced(s: State) = s.isReduced
+    final def apply(s: State, a: A) = { s.update(a); s }
+    final def complete(s: State) = s.complete
+  }
+
   abstract class StatefulTransducer[A, B] extends Transducer[A, B] {
     def inner[S](r: Reducer[A, S]): MutableReduction[B, S]
-    def apply[S](r: Reducer[A, S]): Reducer[B, S] = new Reducer[B, S] {
-      type State = MutableReduction[B, S]
-      def init = inner(r)
-      def isReduced(s: State) = s.isReduced
-      def apply(s: State, b: B) = { s.update(b); s }
-      def complete(s: State) = s.complete
+    def apply[S](r: Reducer[A, S]): Reducer[B, S] = new MutableReducer[B, S] {
+      final def init = inner(r)
     }
   }
 
@@ -59,4 +62,83 @@ trait StatefulOperators { this: Transducers with ContextIsId =>
     }
   }
 
+  def group[A, T, D](g: Reducer[A, T])(p: A => D) = new StatefulTransducer[(D, T), A] {
+    def inner[S](f: Reducer[(D, T), S]) = new MutableReduction[A, S] {
+      var s = f.init
+      var t = g.init
+      var d: Option[D] = None
+      def update( a: A) = {
+        val i = p(a)
+        if(d.isEmpty) d = Some(i)
+        else
+          for( j <- d if j != i ) {
+            s = f(s, (j, g.complete(t)))
+            t = g.init
+            d = Some(i)
+          }
+        if(!g.isReduced(t)) t = g(t, a)
+      }
+      def isReduced = f.isReduced(s)
+      def complete = {
+        for( j <- d)
+          if(!f.isReduced(s)) s = f(s, (j, g.complete(t)))
+        f.complete(s)
+      }
+    }
+  }
+
+  def prefix[A](a0: A): Transducer[A, A] = new Transducer[A, A] {
+    def apply[S](f: Reducer[A, S]): Reducer[A, S] = new Reducer[A, S] {
+      type State = f.State
+
+      def init = {
+        val s0 = f.init
+        if(f.isReduced(s0)) s0
+        else f(s0, a0)
+      }
+
+      def isReduced(s: State) = f.isReduced(s)
+      def apply(s: State, a: A) = f(s, a)
+      def complete(s: State) = f.complete(s)
+    }
+  }
+
+  def suffix[A](an: A): Transducer[A, A] = new Transducer[A, A] {
+    def apply[S](f: Reducer[A, S]): Reducer[A, S] = new Reducer[A, S] {
+      type State = f.State
+      def init = f.init
+      def isReduced(s: State) = f.isReduced(s)
+      def apply(s: State, a: A) = f(s, a)
+      def complete(s: State) =
+        if(f.isReduced(s)) f.complete(s)
+        else f.complete(f(s, an))
+    }
+  }
+
+  def interleave[A](an: A): Transducer[A, A] = new StatefulTransducer[A, A] {
+    def inner[S](f: Reducer[A, S]) = new MutableReduction[A, S] {
+      var sep = false
+      var s = f.init
+      def update(a: A) = {
+        if(sep) s = f(s, an)
+        if( ! f.isReduced(s)) s = f(s, a)
+        sep = true
+      }
+      def isReduced = f.isReduced(s)
+      def complete = f.complete(s)
+    }
+  }
+
+  def integrate[A, S]( g: Reducer[A, S]): Transducer[S, A] = new StatefulTransducer[S, A] {
+    def inner[T]( f: Reducer[S, T]) = new MutableReduction[A, T] {
+      var sg = g.init
+      var sf = f.init
+      def update(a: A) = {
+        sg = g(sg, a)
+        sf = f(sf, g.complete(sg))
+      }
+      def isReduced = f.isReduced(sf) || g.isReduced(sg)
+      def complete = f.complete(sf)
+    }
+  }
 }

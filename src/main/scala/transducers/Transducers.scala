@@ -12,6 +12,7 @@ trait Transducers {
    * on series of values similar to standard library collection methods.
    */
   type Context[+S]
+  def inContext[S](s: S): Context[S]
 
   /**
    * Reducer over A's producing an S.
@@ -28,10 +29,10 @@ trait Transducers {
    */
   trait Reducer[-A, +S] {
     type State
-    def init: State
+    def init: Context[State]
     def apply(s: State, a: A): Context[State]
     def isReduced(s: State): Boolean
-    def complete(s: State): S
+    def complete(s: State): Context[S]
   }
 
   /**
@@ -40,10 +41,10 @@ trait Transducers {
    */
   def reducer[A, S](s: S)(f: (S, A) => Context[S]): Reducer[A, S] = new Reducer[A, S] {
     type State = S
-    def init: S = s
-    def apply(s: S, a: A): Context[S] = f(s, a)
-    def isReduced(s: S): Boolean = false
-    def complete(s: S): S = s
+    def init = inContext(s)
+    def apply(s: S, a: A) = f(s, a)
+    def isReduced(s: S) = false
+    def complete(s: S) = inContext(s)
   }
 
   /**
@@ -59,6 +60,9 @@ trait Transducers {
       def apply[S](fc: Reducer[C, S]) = tb(ta(fc))
     }
   }
+
+  /** Standard type alias with parameters in the _right_ order for many people */
+  type Txducer[-A, +B] = Transducer[B, A]
 
   /**
    *  A transducer that effects no change.
