@@ -254,13 +254,15 @@ trait SeriesEducerDefs { this: Generators with SeriesDefs with EducerDefs with T
 }
 
 trait ComonadDefs { this: EducerDefs with Transducers =>
-  import language.higherKinds
-
+  import  language.higherKinds
   trait Comonad[G[_]] {
     def extract[A](g: G[A]): A
     def map[A, B](g: G[A])(f: A => B): G[B]
     def extend[A, B](g: G[A])(f: G[A] => B): G[B]
   }
+
+  type HKEducer[F[_], A] = Educer[F[A], A]
+  type ListEducer[A] = HKEducer[List, A]
 
 }
 
