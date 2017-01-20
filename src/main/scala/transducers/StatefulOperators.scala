@@ -66,19 +66,19 @@ trait StatefulOperators { this: Transducers with ContextIsId =>
 
   def unique[A]: Transducer[A, A] = new StatefulTransducer[A, A] {
     def inner[S](f: Reducer[A, S]) = new MutableReduction[A, S] {
-      val seen = HashSet[A]()
+      val as = HashSet[A]()
       var s = f.init
-      def update(a: A) = if( ! (seen contains a)) { seen += a; s = f(s, a) }
+      def update(a: A) = if( ! (as contains a)) { as += a; s = f(s, a) }
       def isReduced = f.isReduced(s)
       def complete = f.complete(s)
     }
   }
 
-  def group[A, T, D](g: Reducer[A, T])(p: A => D) = new StatefulTransducer[(D, T), A] {
-    def inner[S](f: Reducer[(D, T), S]) = new MutableReduction[A, S] {
+  def group[K, V, A](g: Reducer[A, V])(p: A => K) = new StatefulTransducer[(K, V), A] {
+    def inner[S](f: Reducer[(K, V), S]) = new MutableReduction[A, S] {
       var s = f.init
       var t = g.init
-      var d: Option[D] = None
+      var d: Option[K] = None
       def update( a: A) = {
         val i = p(a)
         if(d.isEmpty) d = Some(i)
