@@ -29,6 +29,24 @@ trait HigherOrder { this: Transducers with ContextIsId =>
     }
   }
 
+  def reduceByKey[A, K, V](f: Reducer[A, V])(p: A => K): Reducer[A, Map[K, V]] = new Reducer[A, Map[K, V]] {
+    type State = Map[K, f.State]
+    def init = Map()
+    def apply(ss: State, a: A) = {
+      val k = p(a)
+      val ms = ss.get(k)
+      ms.fold {
+        val s = f.init
+        ss.updated(k, if(f.isReduced(s)) s else f(s, a))
+      } {
+        s =>
+          if(f.isReduced(s)) ss else ss.updated(k, f(s, a))
+      }
+    }
+    def isReduced(ss: State) = false
+    def complete(ss: State) = ss.mapValues(f.complete)
+  }
+
   sealed trait ReductionResult[+A, +S]
 
   object ReductionResult {
