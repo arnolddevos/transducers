@@ -1,5 +1,7 @@
 package transducers
 
+import scala.collection.mutable.HashSet
+
 trait StatefulOperators { this: Transducers with ContextIsId =>
 
   trait MutableReduction[A, S] {
@@ -58,6 +60,16 @@ trait StatefulOperators { this: Transducers with ContextIsId =>
       var s = f.init
       def update(a: A) = if(pass || ! p(a)) { s = f(s, a); pass = true }
       def isReduced = pass && f.isReduced(s)
+      def complete = f.complete(s)
+    }
+  }
+
+  def unique[A]: Transducer[A, A] = new StatefulTransducer[A, A] {
+    def inner[S](f: Reducer[A, S]) = new MutableReduction[A, S] {
+      val seen = HashSet[A]()
+      var s = f.init
+      def update(a: A) = if( ! (seen contains a)) { seen += a; s = f(s, a) }
+      def isReduced = f.isReduced(s)
       def complete = f.complete(s)
     }
   }
