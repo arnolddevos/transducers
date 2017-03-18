@@ -1,13 +1,13 @@
 package transducers
+package lifted
 
-object api
+trait API
   extends Transducers
   with Views
   with Operators
   with StatefulOperators
   with Eduction
   with Reduction
-  with Aggregates
-  with HigherOrder
+  with Induction
   with Syntax
-  with ContextIsId
+  with ContextIsMonad

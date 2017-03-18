@@ -36,18 +36,6 @@ trait Transducers {
   }
 
   /**
-   * Make a basic reducer fom an initial value and function.
-   * (State and result S will be the same type.)
-   */
-  def reducer[A, S](s: S)(f: (S, A) => Context[S]): Reducer[A, S] = new Reducer[A, S] {
-    type State = S
-    def init = inContext(s)
-    def apply(s: S, a: A) = f(s, a)
-    def isReduced(s: S) = false
-    def complete(s: S) = inContext(s)
-  }
-
-  /**
    * Transducer is a (polymorphic) function from Reducer to Reducer.
    * These can be composed by andThen as with ordinary functions.
    */
@@ -63,13 +51,6 @@ trait Transducers {
 
   /** Standard type alias with parameters in the _right_ order for many people */
   type Txducer[-A, +B] = Transducer[B, A]
-
-  /**
-   *  A transducer that effects no change.
-   */
-  def cat[A] = new Transducer[A, A] {
-    def apply[S](fa: Reducer[A, S]) = fa
-  }
 
   trait Educible[G, A] {
     def educe[S](g: G, f: Reducer[A, S]): Context[S]
