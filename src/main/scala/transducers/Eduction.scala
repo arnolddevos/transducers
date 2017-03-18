@@ -1,6 +1,6 @@
 package transducers
 
-trait Educers { this: Transducers with ContextIsId =>
+trait Eduction { this: Transducers with ContextIsId =>
 
   implicit def listIsEducible[X] = new Educible[List[X], X] {
     def educe[S]( xs: List[X], f: Reducer[X, S]): S = {

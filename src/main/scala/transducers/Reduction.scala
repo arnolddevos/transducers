@@ -4,7 +4,19 @@ import collection.mutable.{Builder, ListBuffer, ArrayBuilder}
 import collection.immutable.VectorBuilder
 import reflect.ClassTag
 
-trait Builders { this: Transducers =>
+trait Reduction { this: Transducers =>
+
+  /**
+   * Make a basic reducer fom an initial value and function.
+   * (State and result S will be the same type.)
+   */
+  def reducer[A, S](s: S)(f: (S, A) => Context[S]): Reducer[A, S] = new Reducer[A, S] {
+    type State = S
+    def init = inContext(s)
+    def apply(s: S, a: A) = f(s, a)
+    def isReduced(s: S) = false
+    def complete(s: S) = inContext(s)
+  }
 
   def buildString[X](s1: String="", s2: String="", s3: String=""): Reducer[X, String] = new Reducer[X, String] {
     class State {

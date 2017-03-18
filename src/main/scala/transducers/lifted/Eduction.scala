@@ -1,7 +1,7 @@
 package transducers
 package lifted
 
-trait Educers { this: Transducers with ContextIsMonad =>
+trait Eduction { this: Transducers with Induction with ContextIsMonad =>
 
   implicit def listIsEducible[X] = new Educible[List[X], X] {
     def educe[S]( xs: List[X], f: Reducer[X, S]): Context[S] = {
@@ -31,5 +31,28 @@ trait Educers { this: Transducers with ContextIsMonad =>
         else f(s0, xs.get) >>= f.complete
       }
     }
+  }
+
+  implicit def producerIsEducible[X] = new Educible[Producer[X], X] {
+    import Series._
+
+    def educe[S](g: Producer[X], f: Reducer[X, S]): Context[S] = {
+      def loop(g: Producer[X], s: f.State ): Context[S] = {
+        if(f.isReduced(s)) f.complete(s)
+        else
+          g >>= {
+            _ match {
+              case NonEmpty(a, g1) => f(s, a) >>= (loop(g1, _))
+              case Empty => f.complete(s)
+            }
+          }
+      }
+      f.init >>= (loop(g, _))
+    }
+  }
+
+  implicit def seriesIsEducible[X] = new Educible[Series[X], X] {
+    def educe[S]( xs: Series[X], f: Reducer[X, S]): Context[S] =
+      producerIsEducible[X].educe[S](inContext(xs), f)
   }
 }

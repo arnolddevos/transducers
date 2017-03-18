@@ -3,6 +3,13 @@ package transducers
 trait Operators { this: Transducers =>
 
   /**
+   *  A transducer that effects no change.
+   */
+  def cat[A] = new Transducer[A, A] {
+    def apply[S](fa: Reducer[A, S]) = fa
+  }
+
+  /**
    * This helper performs the basic transformation for a stateless transducer.
    */
   private def proxy[A, B, S](f: Reducer[A, S])(g: (f.State, B) => Context[f.State]) =
