@@ -65,4 +65,6 @@ trait Operators { this: Transducers =>
         reduce(g(b), inner)
     }
   }
+
+  def flatten[A, G](implicit e: Educible[G, A]): Transducer[A, G] = flatMap(identity)
 }
