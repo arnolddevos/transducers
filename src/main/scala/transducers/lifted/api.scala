@@ -7,7 +7,7 @@ trait API
   with Operators
   with StatefulOperators
   with Eduction
-  with Reduction
+  with Reductions
   with Induction
   with Syntax
   with ContextIsMonad

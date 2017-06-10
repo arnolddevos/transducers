@@ -56,6 +56,38 @@ trait Transducers {
     def educe[S](g: G, f: Reducer[A, S]): Context[S]
   }
 
+  trait Reduction[A, S] {
+    def isReduced: Boolean
+    def update(a: A): Context[Reduction[A, S]]
+    def complete: Context[S]
+  }
+
+  abstract class GeneralReducer[A, S] extends Reducer[A, S] {
+    type State = Reduction[A, S]
+    final def isReduced(s: State) = s.isReduced
+    final def apply(s: State, a: A) = s.update(a)
+    final def complete(s: State) = s.complete
+  }
+
+  abstract class StatefulTransducer[A, B] extends Transducer[A, B] {
+    def inner[S](f: Reducer[A, S]): Context[Reduction[B, S]]
+    def apply[S](f: Reducer[A, S]): Reducer[B, S] = new GeneralReducer[B, S] {
+      final def init = inner(f)
+    }
+  }
+
+  /**
+   * Make a basic reducer fom an initial value and function.
+   * (State and result S will be the same type.)
+   */
+  def reducer[A, S](s: S)(f: (S, A) => Context[S]): Reducer[A, S] = new Reducer[A, S] {
+    type State = S
+    def init = inContext(s)
+    def apply(s: S, a: A) = f(s, a)
+    def isReduced(s: S) = false
+    def complete(s: S) = inContext(s)
+  }
+
   def reduce[G, A, S](g: G, f: Reducer[A, S])(implicit e: Educible[G, A]): Context[S] =
     e.educe(g, f)
 

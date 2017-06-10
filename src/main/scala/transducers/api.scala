@@ -6,7 +6,7 @@ object api
   with Operators
   with StatefulOperators
   with Eduction
-  with Reduction
+  with Reductions
   with Aggregates
   with HigherOrder
   with Syntax

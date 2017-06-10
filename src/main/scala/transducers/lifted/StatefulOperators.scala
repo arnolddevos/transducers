@@ -3,23 +3,6 @@ package lifted
 
 trait StatefulOperators { this: Transducers with ContextIsMonad =>
 
-  trait Reduction[A, S] {
-    def isReduced: Boolean
-    def update(a: A): Context[Reduction[A, S]]
-    def complete: Context[S]
-  }
-
-  abstract class StatefulTransducer[A, B] extends Transducer[A, B] {
-    def inner[S](f: Reducer[A, S]): Context[Reduction[B, S]]
-    def apply[S](f: Reducer[A, S]): Reducer[B, S] = new Reducer[B, S] {
-      type State = Reduction[B, S]
-      final def init = inner(f)
-      final def isReduced(s: State) = s.isReduced
-      final def apply(s: State, b: B) = s.update(b)
-      final def complete(s: State) = s.complete
-    }
-  }
-
   /**
    * Takes the first n elements.
    *

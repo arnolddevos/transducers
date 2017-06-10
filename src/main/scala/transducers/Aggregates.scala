@@ -1,6 +1,6 @@
 package transducers
 
-trait Aggregates { this: Transducers with Reduction =>
+trait Aggregates { this: Transducers with ContextIsId =>
 
   case class AggDouble(sum: Double, squares: Double, max: Double, min: Double, count: Int) {
     def +( x: Double) = AggDouble(
@@ -27,8 +27,7 @@ trait Aggregates { this: Transducers with Reduction =>
     def apply(x: Double): AggDouble = apply(x, x*x, x, x, 1)
   }
 
-  val aggDouble: Reducer[Double, AggDouble] = reducer(AggDouble())((s, x) => inContext(s + x))
+  val aggDouble: Reducer[Double, AggDouble] = reducer(AggDouble())(_ + _)
 
-  val count: Reducer[Any, Int] = reducer(0)((c, _) => inContext(c + 1))
-
+  val count: Reducer[Any, Int] = reducer(0)((c, _) => c + 1)
 }
