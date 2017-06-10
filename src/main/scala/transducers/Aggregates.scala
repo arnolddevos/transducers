@@ -30,4 +30,19 @@ trait Aggregates { this: Transducers with ContextIsId =>
   val aggDouble: Reducer[Double, AggDouble] = reducer(AggDouble())(_ + _)
 
   val count: Reducer[Any, Int] = reducer(0)((c, _) => c + 1)
+
+  abstract class DoubleReduction extends Reduction[Double, Double] {
+    final def isReduced = false
+  }
+
+  def doubleReducer(f: (Double, Double) => Double): Reducer[Double, Double] =
+    new GeneralReducer[Double, Double] {
+      def init = new DoubleReduction {
+        def complete = throw new UnsupportedOperationException
+        def update(v0: Double) = new DoubleReduction {
+          var complete = v0
+          def update(v: Double): DoubleReduction = { complete += v; this }
+        }
+      }
+    }
 }
