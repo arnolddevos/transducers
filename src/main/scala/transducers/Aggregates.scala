@@ -41,7 +41,7 @@ trait Aggregates { this: Transducers with ContextIsId =>
         def complete = throw new UnsupportedOperationException
         def update(v0: Double) = new DoubleReduction {
           var complete = v0
-          def update(v: Double): DoubleReduction = { complete += v; this }
+          def update(v: Double): DoubleReduction = { complete = f(complete, v); this }
         }
       }
     }
