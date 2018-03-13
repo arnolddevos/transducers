@@ -10,5 +10,5 @@ Other methods handle initialisation, normal and early termination, and the extra
 
 A `Transducer[A, B]` is a function from `Reducer[A, S]` to `Reducer[B, S]` for any type `S`.  Or, from another point of view, it transforms a sequence of `B` to a sequence of `A`.  
 
-Note: A `Transducer` is not the same as a `map` operation.  The input and output sequences may be different lengths and a given `B` will not necessarily correspond to a specific `B`.
+Note: A `Transducer` is not the same as a `map` operation.  The input and output sequences may be different lengths and a given `B` will not necessarily correspond to a specific `A`.
 
