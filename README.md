@@ -2,7 +2,7 @@
 
 Or yet another way to fold.   
 
-These are types and combinators that operate on sequences of values. Inspired by the transducer concept in clojure, but with _types_.  See `Transducer.scala` for details. Breifly:
+These are types and combinators that operate on sequences of values. Inspired by the transducer concept in clojure, but with _types_.  See `Transducer.scala` for details. Briefly:
 
 A `Reducer[A, S]` folds (or reduces) a sequence of `A` values to an `S`.  Its method `apply(a: A, s: State): State` folds one `A` into a reduction `State`. The `State` type is opaque to the user.
 
